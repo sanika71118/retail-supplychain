@@ -59,8 +59,14 @@ with tab_inventory:
         resp = requests.get(f"{API_BASE}/analytics/inventory-summary")
         if resp.status_code == 200:
             summary = resp.json()
-            st.json(summary["summary"])
-            st.info(f"Rows: {summary['shape'][0]}, Columns: {summary['shape'][1]}")
+            df_summary = pd.DataFrame(summary["summary"]).T.reset_index()
+            df_summary.columns = ["Metric", "Value"]
+
+            st.markdown("### Inventory Summary Table")
+            st.dataframe(df_summary, use_container_width=True)
+
+            st.success(f"Rows: {summary['shape'][0]}, Columns: {summary['shape'][1]}")
+
         else:
             st.error(resp.text)
     except:
@@ -106,7 +112,13 @@ with tab_demand:
     st.subheader("Demand Summary")
     try:
         resp = requests.get(f"{API_BASE}/analytics/demand-summary")
-        st.json(resp.json()["summary"])
+        summary = resp.json()["summary"]
+        df_summary = pd.DataFrame(summary).T.reset_index()
+        df_summary.columns = ["Metric", "Value"]
+
+        st.markdown("### Demand Summary Table")
+        st.dataframe(df_summary, use_container_width=True)
+
     except:
         st.info("No data available.")
 
@@ -160,7 +172,13 @@ with tab_suppliers:
     st.subheader("Supplier Summary")
     try:
         resp = requests.get(f"{API_BASE}/analytics/supplier-summary")
-        st.json(resp.json()["summary"])
+        summary = resp.json()["summary"]
+        df_summary = pd.DataFrame(summary).T.reset_index()
+        df_summary.columns = ["Metric", "Value"]
+
+        st.markdown("### Supplier Summary Table")
+        st.dataframe(df_summary, use_container_width=True)
+
     except:
         st.info("No supplier data.")
 
@@ -214,7 +232,13 @@ with tab_shipments:
     st.subheader("Shipment Summary")
     try:
         resp = requests.get(f"{API_BASE}/analytics/shipments-summary")
-        st.json(resp.json()["summary"])
+        summary = resp.json()["summary"]
+        df_summary = pd.DataFrame(summary).T.reset_index()
+        df_summary.columns = ["Metric", "Value"]
+
+        st.markdown("### Shipments Summary Table")
+        st.dataframe(df_summary, use_container_width=True)
+
     except:
         st.info("No data.")
 
