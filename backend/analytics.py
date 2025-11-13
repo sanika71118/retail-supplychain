@@ -144,28 +144,77 @@ def detect_anomalies(demand: pd.DataFrame, contamination: float = 0.02) -> pd.Da
 # ======================================================
 # FORECASTING
 # ======================================================
-
 def forecast_item(demand: pd.DataFrame, item_id: int, periods: int = 7) -> pd.DataFrame:
     """
-    Simple ARIMA forecast for a single item's daily demand.
+    Robust demand forecasting with ARIMA + fallback handling.
+    Ensures a forecast is always returned, even for items with limited history.
     """
+
+    # Extract history for this item
     series = (
         demand[demand["item_id"] == item_id]
+        .sort_values("date")
         .set_index("date")["units_sold"]
         .asfreq("D")
         .fillna(0)
     )
 
-    if len(series) < 20:
-        raise ValueError("Not enough history for ARIMA forecasting for this item.")
+    # ---------------------------------------
+    # CASE 1: Not enough history → Fallback
+    # ---------------------------------------
+    if len(series) < 10:
+        avg_val = float(series.mean()) if len(series) > 0 else 1.0
 
-    model = ARIMA(series, order=(2, 1, 2))
-    model_fit = model.fit()
-    forecast = model_fit.forecast(periods)
+        future_dates = pd.date_range(
+            start=series.index.max() + pd.Timedelta(days=1),
+            periods=periods
+        )
 
-    out = forecast.reset_index()
-    out.columns = ["date", "forecast_units"]
-    return out
+        return pd.DataFrame({
+            "date": future_dates,
+            "forecast_units": [avg_val] * periods
+        })
+
+    # ---------------------------------------
+    # CASE 2: ARIMA with padding for stability
+    # ---------------------------------------
+    try:
+        # If slightly short, pad to stabilize ARIMA
+        if len(series) < 20:
+            pad_needed = 20 - len(series)
+            last_val = series.iloc[-1]
+            padding = pd.Series(
+                [last_val] * pad_needed,
+                index=pd.date_range(
+                    series.index.max() + pd.Timedelta(days=1),
+                    periods=pad_needed
+                )
+            )
+            series = pd.concat([series, padding])
+
+        # Fit ARIMA
+        model = ARIMA(series, order=(2, 1, 2))
+        model_fit = model.fit()
+
+        forecast_vals = model_fit.forecast(periods)
+
+        out = forecast_vals.reset_index()
+        out.columns = ["date", "forecast_units"]
+        return out
+
+    except Exception:
+        # ---------------------------------------
+        # CASE 3: ARIMA fails → fallback
+        # ---------------------------------------
+        avg_val = float(series.mean())
+        future_dates = pd.date_range(
+            start=series.index.max() + pd.Timedelta(days=1),
+            periods=periods
+        )
+        return pd.DataFrame({
+            "date": future_dates,
+            "forecast_units": [avg_val] * periods
+        })
 
 
 # ======================================================
