@@ -35,7 +35,7 @@ with st.sidebar:
         st.success("Backend connected ✓")
     except Exception:
         st.error("Backend not reachable. Start FastAPI.")
-    
+
 
 
 # ======================================================
@@ -50,6 +50,8 @@ tab_inventory, tab_demand, tab_suppliers, tab_shipments, tab_forecast, tab_ai = 
     "AI Supply Chain Assistant"
 ])
 
+
+
 # ------------------------------------------------------
 # INVENTORY SUMMARY
 # ------------------------------------------------------
@@ -59,14 +61,8 @@ with tab_inventory:
         resp = requests.get(f"{API_BASE}/analytics/inventory-summary")
         if resp.status_code == 200:
             summary = resp.json()
-            df_summary = pd.DataFrame(summary["summary"]).T.reset_index()
-            df_summary.columns = ["Metric", "Value"]
-
-            st.markdown("### Inventory Summary Table")
-            st.dataframe(df_summary, use_container_width=True)
-
-            st.success(f"Rows: {summary['shape'][0]}, Columns: {summary['shape'][1]}")
-
+            st.json(summary["summary"])
+            st.info(f"Rows: {summary['shape'][0]}, Columns: {summary['shape'][1]}")
         else:
             st.error(resp.text)
     except:
@@ -75,24 +71,19 @@ with tab_inventory:
     st.subheader("Stockout Risk (Top 20)")
     try:
         data = requests.get(f"{API_BASE}/analytics/stockout-risk").json()
-        df = pd.DataFrame(data)
-        st.dataframe(df)
+        st.dataframe(pd.DataFrame(data))
     except:
         st.info("No data available.")
 
     st.subheader("Excess Inventory (Top 20)")
     try:
         data = requests.get(f"{API_BASE}/analytics/excess-inventory").json()
-        df = pd.DataFrame(data)
-        st.dataframe(df)
+        st.dataframe(pd.DataFrame(data))
     except:
         st.info("No data available.")
 
-    # ---------------------------
-    # INVENTORY VISUALS
-    # ---------------------------
+    # Inventory charts
     st.subheader("Inventory Charts")
-
     df_inv = pd.read_csv("data/synthetic/inventory.csv")
 
     st.markdown("### Stock by Category")
@@ -105,6 +96,7 @@ with tab_inventory:
         st.bar_chart(df_excess.set_index("item_id")["excess_units"])
 
 
+
 # ------------------------------------------------------
 # DEMAND ANALYSIS
 # ------------------------------------------------------
@@ -112,13 +104,7 @@ with tab_demand:
     st.subheader("Demand Summary")
     try:
         resp = requests.get(f"{API_BASE}/analytics/demand-summary")
-        summary = resp.json()["summary"]
-        df_summary = pd.DataFrame(summary).T.reset_index()
-        df_summary.columns = ["Metric", "Value"]
-
-        st.markdown("### Demand Summary Table")
-        st.dataframe(df_summary, use_container_width=True)
-
+        st.json(resp.json()["summary"])
     except:
         st.info("No data available.")
 
@@ -143,9 +129,7 @@ with tab_demand:
     except:
         st.info("Unavailable.")
 
-    # ---------------------------
-    # DEMAND VISUALS
-    # ---------------------------
+    # Demand charts
     st.subheader("Demand Charts")
 
     df_demand = pd.read_csv("data/synthetic/demand_history.csv", parse_dates=["date"])
@@ -172,52 +156,36 @@ with tab_suppliers:
     st.subheader("Supplier Summary")
     try:
         resp = requests.get(f"{API_BASE}/analytics/supplier-summary")
-        summary = resp.json()["summary"]
-        df_summary = pd.DataFrame(summary).T.reset_index()
-        df_summary.columns = ["Metric", "Value"]
-
-        st.markdown("### Supplier Summary Table")
-        st.dataframe(df_summary, use_container_width=True)
-
+        st.json(resp.json()["summary"])
     except:
         st.info("No supplier data.")
 
     st.subheader("Supplier Risk (Top 20)")
     try:
-        data = requests.get(f"{API_BASE}/analytics/supplier-risk").json()
-        df = pd.DataFrame(data)
+        df = pd.DataFrame(requests.get(f"{API_BASE}/analytics/supplier-risk").json())
         st.dataframe(df)
     except:
         st.info("Unavailable.")
 
-    # ---------------------------
-    # SUPPLIER VISUALS
-    # ---------------------------
+    # Supplier charts
     st.subheader("Supplier Charts")
 
     df_suppliers = pd.read_csv("data/synthetic/supplier.csv")
 
-    # On-time rate distribution
     st.markdown("### On-time Delivery Rate Distribution")
     hist_on_time = alt.Chart(df_suppliers).mark_bar().encode(
-    x=alt.X("on_time_rate:Q", bin=True, title="On-time Delivery Rate"),
-    y=alt.Y("count()", title="Count")
-    ).properties(width=700, height=300)
-
+        x=alt.X("on_time_rate:Q", bin=True),
+        y="count()"
+    )
     st.altair_chart(hist_on_time, use_container_width=True)
 
-
-    # Defect rate distribution
     st.markdown("### Defect Rate Distribution")
     hist_defect = alt.Chart(df_suppliers).mark_bar().encode(
-    x=alt.X("defect_rate:Q", bin=True, title="Defect Rate"),
-    y=alt.Y("count()", title="Count")
-    ).properties(width=700, height=300)
-
+        x=alt.X("defect_rate:Q", bin=True),
+        y="count()"
+    )
     st.altair_chart(hist_defect, use_container_width=True)
 
-
-    # Risk Score Top 20
     st.markdown("### Supplier Risk Score (Top 20)")
     top_risk = pd.DataFrame(requests.get(f"{API_BASE}/analytics/supplier-risk").json())
     if not top_risk.empty:
@@ -226,51 +194,40 @@ with tab_suppliers:
 
 
 # ------------------------------------------------------
-# SHIPMENT / LEAD TIME ANALYTICS
+# SHIPMENTS / LEAD TIME ANALYTICS
 # ------------------------------------------------------
 with tab_shipments:
     st.subheader("Shipment Summary")
     try:
         resp = requests.get(f"{API_BASE}/analytics/shipments-summary")
-        summary = resp.json()["summary"]
-        df_summary = pd.DataFrame(summary).T.reset_index()
-        df_summary.columns = ["Metric", "Value"]
-
-        st.markdown("### Shipments Summary Table")
-        st.dataframe(df_summary, use_container_width=True)
-
+        st.json(resp.json()["summary"])
     except:
         st.info("No data.")
 
     st.subheader("Longest Transit Times (Top 50)")
     try:
-        data = requests.get(f"{API_BASE}/analytics/shipment-delays").json()
-        df = pd.DataFrame(data)
+        df = pd.DataFrame(requests.get(f"{API_BASE}/analytics/shipment-delays").json())
         st.dataframe(df)
     except:
         st.info("Unavailable.")
 
-    # ---------------------------
-    # SHIPMENT VISUALS
-    # ---------------------------
     st.subheader("Shipment Charts")
 
-    df_ship = pd.read_csv("data/synthetic/shipments.csv", parse_dates=["date_shipped","date_received"])
+    df_ship = pd.read_csv("data/synthetic/shipments.csv", parse_dates=["date_shipped", "date_received"])
     df_ship["transit_days"] = (df_ship["date_received"] - df_ship["date_shipped"]).dt.days
 
-    # Transit time distribution
     st.markdown("### Transit Time Distribution")
     hist_transit = alt.Chart(df_ship).mark_bar().encode(
-        x=alt.X("transit_days:Q", bin=True, title="Transit Days"),
-        y=alt.Y("count()", title="Count")
-    ).properties(width=700, height=300)
-
+        x=alt.X("transit_days:Q", bin=True),
+        y="count()"
+    )
     st.altair_chart(hist_transit, use_container_width=True)
 
-    # Shipment Volume by Supplier (Top 20)
     st.markdown("### Shipment Volume by Supplier (Top 20)")
     vol = df_ship.groupby("supplier_id")["qty"].sum().nlargest(20)
     st.bar_chart(vol)
+
+
 
 # ------------------------------------------------------
 # FORECASTING
@@ -340,6 +297,7 @@ with tab_forecast:
             st.error(f"Failed to fetch forecast: {e}")
 
 
+
 # ------------------------------------------------------
 # AI SUPPLY CHAIN ASSISTANT
 # ------------------------------------------------------
@@ -349,11 +307,10 @@ with tab_ai:
 
     if query:
         resp = requests.post(f"{API_BASE}/rag/query", json={"query": query})
+
         if resp.status_code == 200:
             data = resp.json()
             st.markdown("### Answer")
             st.write(data["answer"])
-
-
         else:
             st.error(resp.text)
