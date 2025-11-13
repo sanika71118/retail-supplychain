@@ -247,6 +247,7 @@ with tab_forecast:
 
             if resp.status_code == 200:
                 df_forecast = pd.DataFrame(resp.json())  # columns: date, forecast_units
+                df_forecast["date"] = pd.to_datetime(df_forecast["date"])   # ensure consistency
 
                 # Load historical demand for this item
                 df_hist = pd.read_csv("data/synthetic/demand_history.csv", parse_dates=["date"])
@@ -269,6 +270,11 @@ with tab_forecast:
                     .rename(columns={"forecast_units": "Forecast"})
                 )
 
+                # Make sure both have datetime index
+                df_actual_plot.index = pd.to_datetime(df_actual_plot.index)
+                df_forecast_plot.index = pd.to_datetime(df_forecast_plot.index)
+
+                # Join on timeline → gives a 2-line chart
                 df_plot = df_actual_plot.join(df_forecast_plot, how="outer")
 
                 st.markdown("### Actual vs Forecast Demand")
@@ -280,12 +286,14 @@ with tab_forecast:
 
                 # ---- Smoothed Forecast Trend ----
                 st.markdown("### Smoothed Forecast Trend")
+
                 df_forecast_sm = df_forecast.copy()
                 df_forecast_sm["smoothed"] = (
                     df_forecast_sm["forecast_units"]
                     .rolling(3, min_periods=1)
                     .mean()
                 )
+
                 st.line_chart(
                     df_forecast_sm.set_index("date")[["forecast_units", "smoothed"]]
                 )
