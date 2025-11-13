@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+pandas
+numpy
+faker
+statsmodels
+scikit-learn
+sentence-transformers
+faiss-cpu
+streamlit
+openai
+python-dotenv
+requests
