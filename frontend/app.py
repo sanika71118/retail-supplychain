@@ -265,9 +265,9 @@ with tab_forecast:
             )
 
             if resp.status_code == 200:
-                df_forecast = pd.DataFrame(resp.json())
+                df_forecast = pd.DataFrame(resp.json())  # columns: date, forecast_units
 
-                # Load historical demand
+                # Load historical demand for this item
                 df_hist = pd.read_csv("data/synthetic/demand_history.csv", parse_dates=["date"])
                 df_hist_item = df_hist[df_hist["item_id"] == item_id]
 
@@ -275,30 +275,45 @@ with tab_forecast:
                     df_hist_item.groupby("date")["units_sold"].sum().reset_index()
                 )
 
-                df_forecast["type"] = "Forecast"
-                hist_daily["type"] = "Actual"
+                # ---- Build Actual vs Forecast plotting frame ----
+                df_actual_plot = (
+                    hist_daily
+                    .set_index("date")[["units_sold"]]
+                    .rename(columns={"units_sold": "Actual"})
+                )
 
-                combined = pd.concat([
-                    hist_daily[["date","units_sold","type"]],
-                    df_forecast.rename(columns={"forecast_units":"units_sold"})
-                ])
+                df_forecast_plot = (
+                    df_forecast
+                    .set_index("date")[["forecast_units"]]
+                    .rename(columns={"forecast_units": "Forecast"})
+                )
+
+                df_plot = df_actual_plot.join(df_forecast_plot, how="outer")
 
                 st.markdown("### Actual vs Forecast Demand")
-                st.line_chart(combined.set_index("date")["units_sold"])
+                st.line_chart(df_plot)
 
+                # ---- Forecast Table ----
                 st.markdown("### Forecast Table")
                 st.dataframe(df_forecast)
 
+                # ---- Smoothed Forecast Trend ----
                 st.markdown("### Smoothed Forecast Trend")
-                df_forecast["smoothed"] = df_forecast["units_sold"].rolling(3).mean()
-                st.line_chart(df_forecast.set_index("date")[["smoothed"]])
+                df_forecast_sm = df_forecast.copy()
+                df_forecast_sm["smoothed"] = (
+                    df_forecast_sm["forecast_units"]
+                    .rolling(3, min_periods=1)
+                    .mean()
+                )
+                st.line_chart(
+                    df_forecast_sm.set_index("date")[["forecast_units", "smoothed"]]
+                )
 
             else:
                 st.error(resp.text)
 
         except Exception as e:
             st.error(f"Failed to fetch forecast: {e}")
-
 
 
 # ------------------------------------------------------
