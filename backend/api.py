@@ -24,7 +24,7 @@ from .models import AnalyticsSummaryResponse, RAGQueryRequest, RAGQueryResponse
 
 app = FastAPI(title="Retail SupplyChainIQ API", version="1.0")
 
-# CORS so Streamlit frontend can talk to this
+# CORS so frontend (Streamlit or React) can talk to this
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
