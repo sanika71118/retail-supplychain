@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, Table, Alert, Spin, Row, Col, Typography, Statistic } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { getDemandSummary, getPromoLift, getShrinkage, getAnomalies } from '../services/api';
 import type { PromoLift, Shrinkage, Anomaly } from '../types';
 
 const { Title } = Typography;
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const DemandTab = () => {
   const [loading, setLoading] = useState(false);
@@ -139,113 +137,39 @@ const DemandTab = () => {
             </Col>
           </Row>
 
+          {/* Anomalies Time Series */}
           {anomalies.length > 0 && (
-            <Card title="Demand Anomalies" style={{ marginTop: '24px' }}>
-              <Table
-                dataSource={anomalies}
-                columns={anomalyColumns}
-                pagination={{ pageSize: 10 }}
-                size="small"
-                rowKey={(record) => `${record.date}-${record.item_id}`}
-              />
-            </Card>
-          )}
+            <>
+              <Card title="Demand Anomalies" style={{ marginTop: '24px' }}>
+                <Table
+                  dataSource={anomalies}
+                  columns={anomalyColumns}
+                  pagination={{ pageSize: 10 }}
+                  size="small"
+                  rowKey={(record) => `${record.date}-${record.item_id}`}
+                />
+              </Card>
 
-          {/* Promo Lift Comparison Chart */}
-          <Card title="Promo Lift Comparison (Top 15 Items)" style={{ marginTop: '24px' }}>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={promoLift.slice(0, 15)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="item_id" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="avg_promo_units" fill="#52c41a" name="Avg Promo Units" />
-                <Bar dataKey="avg_non_promo_units" fill="#1890ff" name="Avg Non-Promo Units" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Promo Lift Percentage Chart */}
-          <Card title="Promo Lift Percentage (Top 10 Items)" style={{ marginTop: '24px' }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={promoLift.slice(0, 10)} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="item_id" width={80} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="lift_pct" fill="#ff7875" name="Lift %" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Shrinkage Distribution */}
-          <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
-            <Col span={12}>
-              <Card title="Shrinkage Distribution (Top 10)">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={shrinkage.slice(0, 10)}>
+              <Card title="Anomaly Pattern Over Time" style={{ marginTop: '24px' }}>
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={anomalies.slice(0, 30)}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="item_id" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="total_shrink" fill="#fa8c16" name="Total Shrinkage" />
-                  </BarChart>
+                    <Line type="monotone" dataKey="units_sold" stroke="#8884d8" name="Units Sold" />
+                    <Line type="monotone" dataKey="z_score" stroke="#82ca9d" name="Z-Score" />
+                  </LineChart>
                 </ResponsiveContainer>
               </Card>
-            </Col>
-
-            <Col span={12}>
-              <Card title="Top 6 Items by Shrinkage">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={shrinkage.slice(0, 6).map(item => ({
-                        name: `Item ${item.item_id}`,
-                        value: item.total_shrink
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {shrinkage.slice(0, 6).map((_item, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-          </Row>
-
-          {/* Anomalies Time Series */}
-          {anomalies.length > 0 && (
-            <Card title="Anomaly Pattern Over Time" style={{ marginTop: '24px' }}>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={anomalies.slice(0, 30)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 10 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="units_sold" stroke="#8884d8" name="Units Sold" />
-                  <Line type="monotone" dataKey="z_score" stroke="#82ca9d" name="Z-Score" />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
+            </>
           )}
         </>
       ) : (
