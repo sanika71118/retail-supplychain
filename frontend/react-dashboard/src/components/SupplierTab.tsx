@@ -34,11 +34,11 @@ const SupplierTab = () => {
   const riskColumns = [
     { title: 'Supplier ID', dataIndex: 'supplier_id', key: 'supplier_id', width: 120 },
     { title: 'On-Time Rate', dataIndex: 'on_time_rate', key: 'on_time_rate', width: 130,
-      render: (val: number) => `${(val * 100).toFixed(1)}%` },
+      render: (val: number) => val != null ? `${(val * 100).toFixed(1)}%` : 'N/A' },
     { title: 'Defect Rate', dataIndex: 'defect_rate', key: 'defect_rate', width: 130,
-      render: (val: number) => `${(val * 100).toFixed(1)}%` },
+      render: (val: number) => val != null ? `${(val * 100).toFixed(1)}%` : 'N/A' },
     { title: 'Risk Score', dataIndex: 'risk_score', key: 'risk_score', width: 120,
-      render: (val: number) => val.toFixed(2) },
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
   ];
 
   if (loading) {

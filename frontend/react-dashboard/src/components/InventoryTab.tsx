@@ -38,18 +38,18 @@ const InventoryTab = () => {
     { title: 'Item ID', dataIndex: 'item_id', key: 'item_id', width: 100 },
     { title: 'Stock', dataIndex: 'stock', key: 'stock', width: 100 },
     { title: 'Avg Daily Demand', dataIndex: 'avg_daily_demand', key: 'avg_daily_demand', width: 150,
-      render: (val: number) => val.toFixed(2) },
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
     { title: 'Days of Supply', dataIndex: 'days_of_supply', key: 'days_of_supply', width: 150,
-      render: (val: number) => val.toFixed(2) },
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
   ];
 
   const excessColumns = [
     { title: 'Item ID', dataIndex: 'item_id', key: 'item_id', width: 100 },
     { title: 'Stock', dataIndex: 'stock', key: 'stock', width: 100 },
     { title: 'Avg Daily Demand', dataIndex: 'avg_daily_demand', key: 'avg_daily_demand', width: 150,
-      render: (val: number) => val.toFixed(2) },
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
     { title: 'Excess Units', dataIndex: 'excess_units', key: 'excess_units', width: 150,
-      render: (val: number) => val.toFixed(0) },
+      render: (val: number) => val != null ? val.toFixed(0) : 'N/A' },
   ];
 
   if (loading) {
