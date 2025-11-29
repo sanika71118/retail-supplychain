@@ -67,9 +67,36 @@ const InventoryTab = () => {
       {summary ? (
         <>
           <Card style={{ marginBottom: '24px' }}>
-            <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', overflow: 'auto' }}>
-              {JSON.stringify(summary.summary, null, 2)}
-            </pre>
+            <Row gutter={[16, 16]}>
+              <Col span={6}>
+                <Card type="inner" title="Total Items">
+                  <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                    {summary.summary.item_id?.count?.toLocaleString() || 0}
+                  </div>
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card type="inner" title="Unique Products">
+                  <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                    {summary.summary.name?.unique || 0}
+                  </div>
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card type="inner" title="Categories">
+                  <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                    {summary.summary.category?.unique || 0}
+                  </div>
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card type="inner" title="Avg Stock Level">
+                  <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                    {summary.summary.stock?.mean?.toFixed(0) || 0}
+                  </div>
+                </Card>
+              </Col>
+            </Row>
             <Alert
               message={`Dataset: ${summary.shape[0]} rows × ${summary.shape[1]} columns`}
               type="info"

@@ -55,7 +55,7 @@ def analytics_summary(df: pd.DataFrame) -> Dict[str, Any]:
 def stockout_risk(inventory: pd.DataFrame, demand: pd.DataFrame) -> pd.DataFrame:
     """
     Estimate days until stockout for each item based on average daily sales.
-    Lower days_until_stockout = higher risk.
+    Lower days_of_supply = higher risk.
     """
     # avg daily demand per item
     demand_daily = (
@@ -65,29 +65,45 @@ def stockout_risk(inventory: pd.DataFrame, demand: pd.DataFrame) -> pd.DataFrame
         .mean()
     )
 
-    inv = inventory.merge(demand_daily.rename("avg_daily_units"), on="item_id", how="left")
-    inv["avg_daily_units"].fillna(0.1, inplace=True)  # avoid division by 0
+    inv = inventory.merge(demand_daily.rename("avg_daily_demand"), on="item_id", how="left")
+    inv["avg_daily_demand"].fillna(0.1, inplace=True)  # avoid division by 0
 
-    inv["days_until_stockout"] = inv["stock"] / inv["avg_daily_units"]
-    inv = inv.sort_values("days_until_stockout")
+    inv["days_of_supply"] = inv["stock"] / inv["avg_daily_demand"]
+    inv = inv.sort_values("days_of_supply")
 
     return inv[[
         "item_id", "name", "category", "stock", "reorder_point",
-        "avg_daily_units", "days_until_stockout"
+        "avg_daily_demand", "days_of_supply"
     ]]
 
 
-def excess_inventory(inventory: pd.DataFrame) -> pd.DataFrame:
+def excess_inventory(inventory: pd.DataFrame, demand: pd.DataFrame = None) -> pd.DataFrame:
     """
     Items with stock significantly above their reorder point.
+    Optionally includes average daily demand if demand data is provided.
     """
     inv = inventory.copy()
     inv["excess_units"] = inv["stock"] - inv["reorder_point"]
     inv = inv[inv["excess_units"] > 0].sort_values("excess_units", ascending=False)
 
-    return inv[[
-        "item_id", "name", "category", "stock", "reorder_point", "excess_units"
-    ]]
+    # If demand data is provided, calculate avg_daily_demand
+    if demand is not None:
+        demand_daily = (
+            demand.groupby(["item_id", "date"])["units_sold"]
+            .sum()
+            .groupby("item_id")
+            .mean()
+        )
+        inv = inv.merge(demand_daily.rename("avg_daily_demand"), on="item_id", how="left")
+        inv["avg_daily_demand"].fillna(0, inplace=True)
+
+        return inv[[
+            "item_id", "name", "category", "stock", "reorder_point", "avg_daily_demand", "excess_units"
+        ]]
+    else:
+        return inv[[
+            "item_id", "name", "category", "stock", "reorder_point", "excess_units"
+        ]]
 
 
 def shrinkage_summary(demand: pd.DataFrame) -> pd.DataFrame:
