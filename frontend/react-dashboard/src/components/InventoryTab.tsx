@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Table, Alert, Spin, Row, Col, Typography } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, ComposedChart, Area, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart, PieChart, Pie, Cell } from 'recharts';
 import { getInventorySummary, getStockoutRisk, getExcessInventory } from '../services/api';
 import type { StockoutRisk, ExcessInventory } from '../types';
 
@@ -134,16 +134,15 @@ const InventoryTab = () => {
             </Col>
           </Row>
 
-          {/* Excess Inventory Visualization */}
-          <Card title="Excess Inventory Comparison (Top 10 Items)" style={{ marginTop: '24px' }}>
+          {/* Excess Inventory by Item */}
+          <Card title="Excess Inventory by Item (Showing Items with Highest Excess)" style={{ marginTop: '24px' }}>
             <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={excessInventory.slice(0, 10)}>
+              <BarChart data={excessInventory.slice(0, 15)}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="item_id" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="stock" fill="#1890ff" name="Current Stock" />
                 <Bar dataKey="excess_units" fill="#ff7875" name="Excess Units" />
               </BarChart>
             </ResponsiveContainer>
@@ -164,92 +163,29 @@ const InventoryTab = () => {
             </ResponsiveContainer>
           </Card>
 
-          {/* Days of Supply Analysis */}
-          <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
-            <Col span={12}>
-              <Card title="Days of Supply (Stockout Risk Items)">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stockoutRisk.slice(0, 10)} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="item_id" width={80} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="days_of_supply" fill="#ffa940" name="Days of Supply" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-
-            <Col span={12}>
-              <Card title="Excess Inventory Distribution (Top 8)">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={excessInventory.slice(0, 8).map(item => ({
-                        name: `Item ${item.item_id}`,
-                        value: item.excess_units
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {excessInventory.slice(0, 8).map((_item, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-          </Row>
-
-          {/* Stock Turnover Analysis */}
-          <Card title="Inventory Turnover Analysis (Top 15 Items)" style={{ marginTop: '24px' }}>
+          {/* Stock Distribution by Item */}
+          <Card title="Stock Distribution Across Top Items" style={{ marginTop: '24px' }}>
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={excessInventory.slice(0, 15)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="item_id" />
-                <YAxis />
+              <PieChart>
+                <Pie
+                  data={excessInventory.slice(0, 6).map(item => ({
+                    name: `Item ${item.item_id}`,
+                    value: item.stock
+                  }))}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {excessInventory.slice(0, 6).map((_item, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
                 <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="stock" fill="#91d5ff" stroke="#1890ff" name="Stock Level" />
-                <Line type="monotone" dataKey="avg_daily_demand" stroke="#52c41a" strokeWidth={2} name="Avg Daily Demand" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Combined Stockout and Excess View */}
-          <Card title="Combined Inventory Health Overview" style={{ marginTop: '24px' }}>
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="item_id" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  data={stockoutRisk.slice(0, 10)}
-                  type="monotone"
-                  dataKey="days_of_supply"
-                  stroke="#ff4d4f"
-                  strokeWidth={2}
-                  name="Days of Supply (Stockout Risk)"
-                />
-                <Line
-                  data={excessInventory.slice(0, 10)}
-                  type="monotone"
-                  dataKey="excess_units"
-                  stroke="#52c41a"
-                  strokeWidth={2}
-                  name="Excess Units"
-                />
-              </LineChart>
+              </PieChart>
             </ResponsiveContainer>
           </Card>
         </>
