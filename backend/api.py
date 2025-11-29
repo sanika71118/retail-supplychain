@@ -104,7 +104,8 @@ def get_stockout_risk(top_n: int = 20):
 @app.get("/analytics/excess-inventory")
 def get_excess_inventory(top_n: int = 20):
     inv = load_inventory()
-    df = excess_inventory(inv).head(top_n)
+    demand = load_demand()
+    df = excess_inventory(inv, demand).head(top_n)
     return df.to_dict(orient="records")
 
 
