@@ -40,17 +40,17 @@ const DemandTab = () => {
   const promoColumns = [
     { title: 'Item ID', dataIndex: 'item_id', key: 'item_id', width: 100 },
     { title: 'Avg Promo Units', dataIndex: 'avg_promo_units', key: 'avg_promo_units', width: 150,
-      render: (val: number) => val.toFixed(2) },
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
     { title: 'Avg Non-Promo Units', dataIndex: 'avg_non_promo_units', key: 'avg_non_promo_units', width: 150,
-      render: (val: number) => val.toFixed(2) },
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
     { title: 'Lift %', dataIndex: 'lift_pct', key: 'lift_pct', width: 100,
-      render: (val: number) => `${val.toFixed(1)}%` },
+      render: (val: number) => val != null ? `${val.toFixed(1)}%` : 'N/A' },
   ];
 
   const shrinkageColumns = [
     { title: 'Item ID', dataIndex: 'item_id', key: 'item_id', width: 100 },
     { title: 'Total Shrink', dataIndex: 'total_shrink', key: 'total_shrink', width: 150,
-      render: (val: number) => val.toFixed(0) },
+      render: (val: number) => val != null ? val.toFixed(0) : 'N/A' },
   ];
 
   const anomalyColumns = [
@@ -58,7 +58,7 @@ const DemandTab = () => {
     { title: 'Item ID', dataIndex: 'item_id', key: 'item_id', width: 100 },
     { title: 'Units Sold', dataIndex: 'units_sold', key: 'units_sold', width: 120 },
     { title: 'Z-Score', dataIndex: 'z_score', key: 'z_score', width: 120,
-      render: (val: number) => val.toFixed(2) },
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
   ];
 
   if (loading) {

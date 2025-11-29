@@ -39,7 +39,7 @@ const ForecastTab = () => {
       dataIndex: 'forecast_units',
       key: 'forecast_units',
       width: 150,
-      render: (val: number) => val.toFixed(2),
+      render: (val: number) => val != null ? val.toFixed(2) : 'N/A',
     },
   ];
 
