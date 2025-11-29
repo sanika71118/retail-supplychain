@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Table, Alert, Spin, Typography, Row, Col, Statistic } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, LineChart, Line } from 'recharts';
 import { getSupplierSummary, getSupplierRisk } from '../services/api';
 import type { SupplierRisk } from '../types';
 
@@ -52,8 +52,8 @@ const SupplierTab = () => {
   // Add jitter to scatter plot data to handle overlapping points
   const scatterDataWithJitter = supplierRisk.map((item) => ({
     ...item,
-    on_time_rate_jitter: item.on_time_rate + (Math.random() - 0.5) * 0.02,
-    defect_rate_jitter: item.defect_rate + (Math.random() - 0.5) * 0.01,
+    on_time_rate_jitter: item.on_time_rate + (Math.random() - 0.5) * 0.05,
+    defect_rate_jitter: item.defect_rate + (Math.random() - 0.5) * 0.02,
   }));
 
   // Calculate summary stats
@@ -137,14 +137,14 @@ const SupplierTab = () => {
           {/* On-Time Rate vs Defect Rate Scatter (with jitter) */}
           <Card title="On-Time Rate vs Defect Rate" style={{ marginBottom: '24px' }}>
             <ResponsiveContainer width="100%" height={400}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 30, left: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   type="number"
                   dataKey="on_time_rate_jitter"
                   name="On-Time Rate"
-                  label={{ value: 'On-Time Rate', position: 'bottom', offset: 0 }}
-                  domain={[0, 1]}
+                  label={{ value: 'On-Time Rate', position: 'bottom', offset: 5 }}
+                  domain={[0.45, 0.60]}
                   tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
                 />
                 <YAxis
@@ -152,7 +152,7 @@ const SupplierTab = () => {
                   dataKey="defect_rate_jitter"
                   name="Defect Rate"
                   label={{ value: 'Defect Rate', angle: -90, position: 'insideLeft' }}
-                  domain={[0, 'auto']}
+                  domain={[0.05, 0.18]}
                   tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
                 />
                 <Tooltip
@@ -168,7 +168,8 @@ const SupplierTab = () => {
                   name="Suppliers"
                   data={scatterDataWithJitter}
                   fill="#8884d8"
-                  fillOpacity={0.6}
+                  fillOpacity={0.5}
+                  shape="circle"
                 />
               </ScatterChart>
             </ResponsiveContainer>
@@ -206,27 +207,6 @@ const SupplierTab = () => {
               </Card>
             </Col>
           </Row>
-
-          {/* Supplier Performance Radar Chart */}
-          <Card title="Top 5 Suppliers Performance Radar" style={{ marginBottom: '24px' }}>
-            <ResponsiveContainer width="100%" height={400}>
-              <RadarChart data={supplierRisk.slice(0, 5).map(s => ({
-                supplier: `Supplier ${s.supplier_id}`,
-                onTime: s.on_time_rate * 100,
-                quality: (1 - s.defect_rate) * 100,
-                reliability: (1 - s.risk_score / 10) * 100,
-              }))}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="supplier" />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                <Radar name="On-Time %" dataKey="onTime" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                <Radar name="Quality %" dataKey="quality" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
-                <Radar name="Reliability %" dataKey="reliability" stroke="#ffc658" fill="#ffc658" fillOpacity={0.6} />
-                <Legend />
-                <Tooltip />
-              </RadarChart>
-            </ResponsiveContainer>
-          </Card>
 
           {/* Combined Metrics Line Chart */}
           <Card title="Supplier Metrics Trend (Top 15)">
