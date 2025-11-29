@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Card, Table, Alert, Spin, Typography } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Card, Table, Alert, Spin, Typography, Row, Col, Statistic } from 'antd';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, PieChart, Pie, Cell } from 'recharts';
 import { getShipmentsSummary, getShipmentDelays } from '../services/api';
 import type { ShipmentDelay } from '../types';
 
 const { Title } = Typography;
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c'];
 
 const ShipmentTab = () => {
   const [loading, setLoading] = useState(false);
@@ -45,16 +47,71 @@ const ShipmentTab = () => {
     );
   }
 
+  // Calculate summary statistics
+  const avgTransitDays = delays.length > 0
+    ? delays.reduce((sum, d) => sum + d.transit_days, 0) / delays.length
+    : 0;
+  const maxTransitDays = delays.length > 0
+    ? Math.max(...delays.map(d => d.transit_days))
+    : 0;
+  const minTransitDays = delays.length > 0
+    ? Math.min(...delays.map(d => d.transit_days))
+    : 0;
+
+  // Group by supplier for analysis
+  const supplierStats = delays.reduce((acc: any, delay) => {
+    if (!acc[delay.supplier_id]) {
+      acc[delay.supplier_id] = { supplier_id: delay.supplier_id, total_days: 0, count: 0 };
+    }
+    acc[delay.supplier_id].total_days += delay.transit_days;
+    acc[delay.supplier_id].count += 1;
+    return acc;
+  }, {});
+
+  const supplierAvgTransit = Object.values(supplierStats).map((stat: any) => ({
+    supplier_id: stat.supplier_id,
+    avg_transit_days: stat.total_days / stat.count,
+    shipment_count: stat.count,
+  })).sort((a: any, b: any) => b.avg_transit_days - a.avg_transit_days).slice(0, 15);
+
   return (
     <div>
       <Title level={4}>Shipments & Lead Times</Title>
 
       {summary ? (
         <>
+          {/* Summary Statistics Cards */}
           <Card style={{ marginBottom: '24px' }}>
-            <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', overflow: 'auto' }}>
-              {JSON.stringify(summary.summary, null, 2)}
-            </pre>
+            <Row gutter={[16, 16]}>
+              <Col span={6}>
+                <Statistic
+                  title="Total Shipments"
+                  value={delays.length}
+                  valueStyle={{ color: '#3f8600' }}
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Avg Transit Days"
+                  value={avgTransitDays.toFixed(1)}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Max Transit Days"
+                  value={maxTransitDays}
+                  valueStyle={{ color: '#cf1322' }}
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Min Transit Days"
+                  value={minTransitDays}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Col>
+            </Row>
           </Card>
 
           <Card title="Longest Transit Times (Top 50)" style={{ marginBottom: '24px' }}>
@@ -67,8 +124,9 @@ const ShipmentTab = () => {
             />
           </Card>
 
-          <Card title="Transit Time Distribution (Top 20)">
-            <ResponsiveContainer width="100%" height={400}>
+          {/* Transit Time Distribution */}
+          <Card title="Transit Time Distribution (Top 20 Shipments)" style={{ marginBottom: '24px' }}>
+            <ResponsiveContainer width="100%" height={350}>
               <BarChart data={delays.slice(0, 20)}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="shipment_id" />
@@ -77,6 +135,103 @@ const ShipmentTab = () => {
                 <Legend />
                 <Bar dataKey="transit_days" fill="#faad14" name="Transit Days" />
               </BarChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Transit Time Trend */}
+          <Card title="Transit Time Trend (Top 30 Shipments)" style={{ marginBottom: '24px' }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={delays.slice(0, 30)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="shipment_id" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="transit_days" stroke="#fa8c16" strokeWidth={2} name="Transit Days" />
+              </LineChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Supplier Performance Analysis */}
+          <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Col span={12}>
+              <Card title="Average Transit Days by Supplier (Top 10)">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={supplierAvgTransit.slice(0, 10)} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis type="category" dataKey="supplier_id" width={80} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="avg_transit_days" fill="#ff7875" name="Avg Transit Days" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+            </Col>
+
+            <Col span={12}>
+              <Card title="Shipment Count by Supplier (Top 8)">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={supplierAvgTransit.slice(0, 8).map(item => ({
+                        name: `Supplier ${item.supplier_id}`,
+                        value: item.shipment_count
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {supplierAvgTransit.slice(0, 8).map((_item, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Transit Days Area Chart */}
+          <Card title="Transit Days Pattern (Top 25 Shipments)" style={{ marginBottom: '24px' }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={delays.slice(0, 25)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="shipment_id" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="transit_days" fill="#91d5ff" stroke="#1890ff" name="Transit Days" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Supplier vs Transit Days Scatter */}
+          <Card title="Supplier Performance Scatter Plot">
+            <ResponsiveContainer width="100%" height={350}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  dataKey="supplier_id"
+                  name="Supplier ID"
+                  label={{ value: 'Supplier ID', position: 'bottom', offset: 0 }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="transit_days"
+                  name="Transit Days"
+                  label={{ value: 'Transit Days', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                <Legend />
+                <Scatter name="Shipments" data={delays.slice(0, 50)} fill="#ff7875" fillOpacity={0.6} />
+              </ScatterChart>
             </ResponsiveContainer>
           </Card>
         </>
