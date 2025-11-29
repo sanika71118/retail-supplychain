@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Card, Table, Alert, Spin, Row, Col, Typography, Statistic } from 'antd';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { getDemandSummary, getPromoLift, getShrinkage, getAnomalies } from '../services/api';
-import type { PromoLift, Shrinkage, Anomaly } from '../types';
+import { getDemandSummary, getAnomalies } from '../services/api';
+import type { Anomaly } from '../types';
 
 const { Title } = Typography;
 
 const DemandTab = () => {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<any>(null);
-  const [promoLift, setPromoLift] = useState<PromoLift[]>([]);
-  const [shrinkage, setShrinkage] = useState<Shrinkage[]>([]);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
 
   useEffect(() => {
@@ -20,15 +18,11 @@ const DemandTab = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [summaryData, promoData, shrinkData, anomalyData] = await Promise.all([
+      const [summaryData, anomalyData] = await Promise.all([
         getDemandSummary(),
-        getPromoLift(),
-        getShrinkage(),
         getAnomalies(),
       ]);
       setSummary(summaryData);
-      setPromoLift(promoData);
-      setShrinkage(shrinkData);
       setAnomalies(anomalyData);
     } catch (error) {
       console.error('Error fetching demand data:', error);
@@ -36,22 +30,6 @@ const DemandTab = () => {
       setLoading(false);
     }
   };
-
-  const promoColumns = [
-    { title: 'Item ID', dataIndex: 'item_id', key: 'item_id', width: 100 },
-    { title: 'Avg Promo Units', dataIndex: 'avg_promo_units', key: 'avg_promo_units', width: 150,
-      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
-    { title: 'Avg Non-Promo Units', dataIndex: 'avg_non_promo_units', key: 'avg_non_promo_units', width: 150,
-      render: (val: number) => val != null ? val.toFixed(2) : 'N/A' },
-    { title: 'Lift %', dataIndex: 'lift_pct', key: 'lift_pct', width: 100,
-      render: (val: number) => val != null ? `${val.toFixed(1)}%` : 'N/A' },
-  ];
-
-  const shrinkageColumns = [
-    { title: 'Item ID', dataIndex: 'item_id', key: 'item_id', width: 100 },
-    { title: 'Total Shrink', dataIndex: 'total_shrink', key: 'total_shrink', width: 150,
-      render: (val: number) => val != null ? val.toFixed(0) : 'N/A' },
-  ];
 
   const anomalyColumns = [
     { title: 'Date', dataIndex: 'date', key: 'date', width: 120 },
@@ -108,34 +86,6 @@ const DemandTab = () => {
               </Col>
             </Row>
           </Card>
-
-          <Row gutter={[16, 16]}>
-            <Col span={12}>
-              <Card title="Promo Lift Analysis (Top 20)" style={{ height: '100%' }}>
-                <Table
-                  dataSource={promoLift}
-                  columns={promoColumns}
-                  pagination={false}
-                  scroll={{ y: 250 }}
-                  size="small"
-                  rowKey="item_id"
-                />
-              </Card>
-            </Col>
-
-            <Col span={12}>
-              <Card title="Shrinkage Summary (Top 20)" style={{ height: '100%' }}>
-                <Table
-                  dataSource={shrinkage}
-                  columns={shrinkageColumns}
-                  pagination={false}
-                  scroll={{ y: 250 }}
-                  size="small"
-                  rowKey="item_id"
-                />
-              </Card>
-            </Col>
-          </Row>
 
           {/* Anomalies Time Series */}
           {anomalies.length > 0 && (
