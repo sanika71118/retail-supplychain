@@ -19,12 +19,24 @@ def gen_inventory(n=5000):
         category = random.choice(categories)
         base_cost = random.uniform(2, 300)
 
+        # Create more variation in stock levels - use different ranges
+        stock_tier = random.random()
+        if stock_tier < 0.3:  # Low stock items
+            stock = random.randint(0, 500)
+            reorder = random.randint(100, 400)
+        elif stock_tier < 0.6:  # Medium stock items
+            stock = random.randint(500, 1500)
+            reorder = random.randint(50, 300)
+        else:  # High stock items
+            stock = random.randint(1500, 3000)
+            reorder = random.randint(20, 200)
+
         inventory.append({
             "item_id": i + 1,
             "name": fake.word(),
             "category": category,
-            "stock": random.randint(0, 2000),
-            "reorder_point": random.randint(20, 200),
+            "stock": stock,
+            "reorder_point": reorder,
             "unit_cost": round(base_cost, 2),
             "selling_price": round(base_cost * random.uniform(1.15, 2.5), 2)
         })
@@ -64,12 +76,31 @@ def gen_suppliers(n=5000):
     suppliers = []
 
     for i in range(n):
+        # Create supplier performance tiers for more variation
+        tier = random.random()
+        if tier < 0.2:  # Excellent suppliers (20%)
+            on_time = round(random.uniform(0.85, 0.99), 2)
+            defect = round(random.uniform(0.01, 0.05), 2)
+            lead_time = random.randint(1, 15)
+        elif tier < 0.5:  # Good suppliers (30%)
+            on_time = round(random.uniform(0.70, 0.85), 2)
+            defect = round(random.uniform(0.05, 0.10), 2)
+            lead_time = random.randint(10, 25)
+        elif tier < 0.8:  # Average suppliers (30%)
+            on_time = round(random.uniform(0.55, 0.70), 2)
+            defect = round(random.uniform(0.08, 0.15), 2)
+            lead_time = random.randint(20, 35)
+        else:  # Poor suppliers (20%)
+            on_time = round(random.uniform(0.40, 0.60), 2)
+            defect = round(random.uniform(0.12, 0.25), 2)
+            lead_time = random.randint(30, 60)
+
         suppliers.append({
             "supplier_id": i + 1,
             "supplier_name": fake.company(),
-            "on_time_rate": round(random.uniform(0.5, 0.99), 2),
-            "defect_rate": round(random.uniform(0.01, 0.15), 2),
-            "lead_time_days": random.randint(1, 45)
+            "on_time_rate": on_time,
+            "defect_rate": defect,
+            "lead_time_days": lead_time
         })
 
     return pd.DataFrame(suppliers)
@@ -85,7 +116,19 @@ def gen_shipments(n=5000, n_items=5000, n_suppliers=5000):
         item = random.randint(1, n_items)
         supplier = random.randint(1, n_suppliers)
         shipped_date = fake.date_between(start_date='-120d', end_date='-5d')
-        received_date = fake.date_between(start_date=shipped_date, end_date='today')
+
+        # Create varied transit times - some shipments are fast, some slow
+        transit_variation = random.random()
+        if transit_variation < 0.3:  # Fast shipments (30%)
+            transit_days = random.randint(1, 30)
+        elif transit_variation < 0.6:  # Normal shipments (30%)
+            transit_days = random.randint(30, 80)
+        elif transit_variation < 0.9:  # Slow shipments (30%)
+            transit_days = random.randint(80, 110)
+        else:  # Very slow shipments (10%)
+            transit_days = random.randint(110, 150)
+
+        received_date = shipped_date + pd.Timedelta(days=transit_days)
 
         shipments.append({
             "shipment_id": i + 1,
